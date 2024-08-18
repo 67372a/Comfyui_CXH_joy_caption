@@ -148,7 +148,7 @@ class Joy_caption:
         if Joy_caption.original_IS_CHANGED is None:
             Joy_caption.original_IS_CHANGED = Joy_caption.IS_CHANGED
         if self.reroll_result == False:
-            setattr(Joy_caption, "IS_CHANGED", LLM.original_IS_CHANGED)
+            setattr(Joy_caption, "IS_CHANGED", Joy_caption.original_IS_CHANGED)
         else:
             if hasattr(Joy_caption, "IS_CHANGED"):
                 delattr(Joy_caption, "IS_CHANGED")
