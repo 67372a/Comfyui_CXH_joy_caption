@@ -121,7 +121,7 @@ class Joy_caption:
     original_IS_CHANGED = None
 
     def __init__(self):
-        self.reroll_result = "disable"
+        self.reroll_result = "enable"
         pass
 
     @classmethod
@@ -135,7 +135,7 @@ class Joy_caption:
                 "temperature": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "top_k": ("INT", {"default": 10, "min": 0, "max": 200, "step": 1}),
                 "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
-                "reroll_result": (["enable", "disable"], {"default": "disable"}),
+                "reroll_result": (["enable", "disable"], {"default": "enable"}),
                 "cache_models": ("BOOLEAN", {"default": True}),
             }
         }
@@ -148,7 +148,7 @@ class Joy_caption:
         self.reroll_result = reroll_result
         if Joy_caption.original_IS_CHANGED is None:
             Joy_caption.original_IS_CHANGED = Joy_caption.IS_CHANGED
-        if self.reroll_result == "disable":
+        if self.reroll_result == "enable":
             setattr(Joy_caption, "IS_CHANGED", Joy_caption.original_IS_CHANGED)
         else:
             if hasattr(Joy_caption, "IS_CHANGED"):
