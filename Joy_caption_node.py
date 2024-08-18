@@ -142,7 +142,7 @@ class Joy_caption:
     CATEGORY = "CXH/LLM"
     RETURN_TYPES = ("STRING",)
     FUNCTION = "gen"
-    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,reroll_result,cache_models, reroll_result): 
+    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,reroll_result,cache_models): 
     
         self.reroll_result = reroll_result
         if Joy_caption.original_IS_CHANGED is None:
