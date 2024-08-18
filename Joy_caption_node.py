@@ -212,7 +212,7 @@ class Joy_caption:
         caption = tokenizer.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
         r = caption.strip()
 
-        if cache_model == False:
+        if cache_models == False:
            joy_pipeline.parent.clearCache()
 
         return (r,)
