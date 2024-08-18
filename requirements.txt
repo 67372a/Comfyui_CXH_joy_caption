@@ -3,3 +3,5 @@ accelerate
 #torch
 transformers==4.43.3
 sentencepiece
+protobuf
+bitsandbytes

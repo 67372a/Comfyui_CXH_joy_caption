@@ -54,7 +54,7 @@ class Joy_caption_load:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": (["unsloth/Meta-Llama-3.1-8B-bnb-4bit", "meta-llama/Meta-Llama-3.1-8B"],), 
+                "model": (["unsloth/Meta-Llama-3.1-8B-bnb-4bit", "unsloth/Meta-Llama-3.1-8B-bnb-4bit"],), 
                
             }
         }
@@ -81,7 +81,7 @@ class Joy_caption_load:
         clip_model = clip_model.vision_model
         clip_model.eval()
         clip_model.requires_grad_(False)
-        clip_model.to("cuda")
+        clip_model.to('cuda:0')
 
        
         # LLM
@@ -99,7 +99,7 @@ class Joy_caption_load:
         image_adapter.load_state_dict(torch.load(adapter_path, map_location="cpu"))
         adjusted_adapter =  image_adapter #AdjustedImageAdapter(image_adapter, text_model.config.hidden_size)
         adjusted_adapter.eval()
-        adjusted_adapter.to("cuda")
+        adjusted_adapter.to('cuda:0')
 
         self.pipeline.clip_model = clip_model
         self.pipeline.clip_processor = clip_processor
@@ -128,9 +128,11 @@ class Joy_caption:
             "required": {
                 "joy_pipeline": ("JoyPipeline",),
                 "image": ("IMAGE",),
-                "prompt":   ("STRING", {"multiline": True, "default": "A descriptive caption for this image"},),
+                "prompt":   ("STRING", {"multiline": True, "default": "A descriptive caption for this image:\n"},),
                 "max_new_tokens":("INT", {"default": 300, "min": 10, "max": 1000, "step": 1}),
                 "temperature": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "top_k": ("INT", {"default": 10, "min": 0, "max": 200, "step": 1}),
+                "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
                 "cache": ("BOOLEAN", {"default": False}),
             }
         }
@@ -138,7 +140,7 @@ class Joy_caption:
     CATEGORY = "CXH/LLM"
     RETURN_TYPES = ("STRING",)
     FUNCTION = "gen"
-    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,cache): 
+    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,cache): 
 
         if joy_pipeline.clip_processor == None :
             joy_pipeline.parent.loadCheckPoint()    
@@ -155,19 +157,19 @@ class Joy_caption:
 
         # Preprocess image
         pImge = clip_processor(images=input_image, return_tensors='pt').pixel_values
-        pImge = pImge.to('cuda')
+        pImge = pImge.to('cuda:0')
 
         # Tokenize the prompt
         prompt = tokenizer.encode(prompt, return_tensors='pt', padding=False, truncation=False, add_special_tokens=False)
         # Embed image
-        with torch.amp.autocast_mode.autocast('cuda', enabled=True):
+        with torch.amp.autocast_mode.autocast('cuda:0', enabled=True):
             vision_outputs = clip_model(pixel_values=pImge, output_hidden_states=True)
             image_features = vision_outputs.hidden_states[-2]
             embedded_images = image_adapter(image_features)
-            embedded_images = embedded_images.to('cuda')
+            embedded_images = embedded_images.to('cuda:0')
 
         # Embed prompt
-        prompt_embeds = text_model.model.embed_tokens(prompt.to('cuda'))
+        prompt_embeds = text_model.model.embed_tokens(prompt.to('cuda:0'))
         assert prompt_embeds.shape == (1, prompt.shape[1], text_model.config.hidden_size), f"Prompt shape is {prompt_embeds.shape}, expected {(1, prompt.shape[1], text_model.config.hidden_size)}"
         embedded_bos = text_model.model.embed_tokens(torch.tensor([[tokenizer.bos_token_id]], device=text_model.device, dtype=torch.int64))   
 
@@ -182,10 +184,14 @@ class Joy_caption:
             torch.tensor([[tokenizer.bos_token_id]], dtype=torch.long),
             torch.zeros((1, embedded_images.shape[1]), dtype=torch.long),
             prompt,
-        ], dim=1).to('cuda')
+        ], dim=1).to('cuda:0')
         attention_mask = torch.ones_like(input_ids)
         
-        generate_ids = text_model.generate(input_ids, inputs_embeds=inputs_embeds, attention_mask=attention_mask, max_new_tokens=max_new_tokens, do_sample=True, top_k=10, temperature=temperature, suppress_tokens=None)
+        do_sample=True
+        if temperature == 0:
+            do_sample=False
+        
+        generate_ids = text_model.generate(input_ids, inputs_embeds=inputs_embeds, attention_mask=attention_mask, max_new_tokens=max_new_tokens, do_sample=do_sample, top_k=top_k, top_p=top_p, temperature=temperature, suppress_tokens=None)
 
         # Trim off the prompt
         generate_ids = generate_ids[:, input_ids.shape[1]:]
