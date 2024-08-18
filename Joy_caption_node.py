@@ -118,6 +118,7 @@ class Joy_caption_load:
         return (self.pipeline,)
 
 class Joy_caption:
+    original_IS_CHANGED = None
 
     def __init__(self):
         pass
@@ -133,16 +134,26 @@ class Joy_caption:
                 "temperature": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "top_k": ("INT", {"default": 10, "min": 0, "max": 200, "step": 1}),
                 "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
-                "cache": ("BOOLEAN", {"default": False}),
+                "reroll_result": ("BOOLEAN", {"default": True}),
+                "cache_models": ("BOOLEAN", {"default": True}),
             }
         }
 
     CATEGORY = "CXH/LLM"
     RETURN_TYPES = ("STRING",)
     FUNCTION = "gen"
-    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,cache): 
-
-        if joy_pipeline.clip_processor == None :
+    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,reroll_result,cache_models, reroll_result): 
+    
+        self.reroll_result = reroll_result
+        if Joy_caption.original_IS_CHANGED is None:
+            Joy_caption.original_IS_CHANGED = Joy_caption.IS_CHANGED
+        if self.reroll_result == False:
+            setattr(Joy_caption, "IS_CHANGED", LLM.original_IS_CHANGED)
+        else:
+            if hasattr(Joy_caption, "IS_CHANGED"):
+                delattr(Joy_caption, "IS_CHANGED")
+    
+        if joy_pipeline.clip_processor == None:
             joy_pipeline.parent.loadCheckPoint()    
 
         clip_processor = joy_pipeline.clip_processor
@@ -201,7 +212,12 @@ class Joy_caption:
         caption = tokenizer.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
         r = caption.strip()
 
-        if cache == False:
-           joy_pipeline.parent.clearCache()  
+        if cache_model == False:
+           joy_pipeline.parent.clearCache()
 
         return (r,)
+        
+    @classmethod
+    def IS_CHANGED(s):
+        hash_value = hashlib.md5(str(datetime.datetime.now()).encode()).hexdigest()
+        return hash_value
