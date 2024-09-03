@@ -136,7 +136,7 @@ class Joy_caption:
                 "top_k": ("INT", {"default": 10, "min": 0, "max": 200, "step": 1}),
                 "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
                 "beams": ("INT", {"default": 1, "min": 1, "max": 64, "step": 1}),
-                "length_penalty": ("FLOAT", {"default": 1.0, "min": -5.0, "max": 5.0, "step": 0.1}),
+                "length_penalty": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.1}),
                 "reroll_result": (["enable", "disable"], {"default": "enable"}),
                 "cache_models": ("BOOLEAN", {"default": True}),
             }
