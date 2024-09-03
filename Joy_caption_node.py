@@ -135,6 +135,8 @@ class Joy_caption:
                 "temperature": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "top_k": ("INT", {"default": 10, "min": 0, "max": 200, "step": 1}),
                 "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
+                "beams": ("INT", {"default": 1, "min": 1, "max": 64, "step": 1}),
+                "length_penalty": ("FLOAT", {"default": 1.0, "min": -5.0, "max": 5.0, "step": 0.1}),
                 "reroll_result": (["enable", "disable"], {"default": "enable"}),
                 "cache_models": ("BOOLEAN", {"default": True}),
             }
@@ -143,7 +145,7 @@ class Joy_caption:
     CATEGORY = "CXH/LLM"
     RETURN_TYPES = ("STRING",)
     FUNCTION = "gen"
-    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,reroll_result,cache_models): 
+    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,beams,length_penalty,reroll_result,cache_models): 
     
         self.reroll_result = reroll_result
         if Joy_caption.original_IS_CHANGED is None:
@@ -203,7 +205,7 @@ class Joy_caption:
         if temperature == 0:
             do_sample=False
         
-        generate_ids = text_model.generate(input_ids, inputs_embeds=inputs_embeds, attention_mask=attention_mask, max_new_tokens=max_new_tokens, do_sample=do_sample, top_k=top_k, top_p=top_p, temperature=temperature, suppress_tokens=None)
+        generate_ids = text_model.generate(input_ids, inputs_embeds=inputs_embeds, attention_mask=attention_mask, max_new_tokens=max_new_tokens, do_sample=do_sample, top_k=top_k, top_p=top_p, temperature=temperature, suppress_tokens=None, num_beams=beams, length_penalty=length_penalty)
 
         # Trim off the prompt
         generate_ids = generate_ids[:, input_ids.shape[1]:]
