@@ -1,4 +1,7 @@
-.2024-9-6 florence2 添加（Add）Florence-2-base-PromptGen-v1.5 模型媲美（compare favourably with） joyC_caption  
+.2024-9-9 florence2 Add Florence-2-large-PromptGen-v1.5 and MiniCPM3-4B(CXH_MinCP3_4B_Load CXH_MinCP3_4B_Chat) 
+    MiniCPM3-4B聊天 翻译，改写都很强
+
+.2024-9-6 florence2 Add Florence-2-base-PromptGen-v1.5 
 
 .2024-9-2 更新批量打标案例(Update batch marking cases) 速度：florence2<min2.6<joy
 

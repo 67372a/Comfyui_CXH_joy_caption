@@ -1,6 +1,6 @@
 protobuf
 huggingface_hub==0.24.3
-transformers>=4.43.3
+transformers>=4.44.2
 tqdm
 numpy
 surrealist

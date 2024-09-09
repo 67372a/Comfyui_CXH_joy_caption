@@ -48,10 +48,11 @@ class CXH_DownloadAndLoadFlorence2Model:
                     'HuggingFaceM4/Florence-2-DocVQA',
                     'thwri/CogFlorence-2-Large-Freeze',
                     'thwri/CogFlorence-2.2-Large',
-                    'MiaoshouAI/Florence-2-base-PromptGen-v1.5'
+                    'MiaoshouAI/Florence-2-base-PromptGen-v1.5',
+                    'MiaoshouAI/Florence-2-large-PromptGen-v1.5'
                     ],
                     {
-                    "default": 'thwri/CogFlorence-2.2-Large'
+                    "default": 'MiaoshouAI/Florence-2-large-PromptGen-v1.5'
                     }),
             "precision": ([ 'fp16','bf16','fp32'],
                     {
@@ -142,18 +143,23 @@ class CXH_Florence2Run:
                     'referring_expression_segmentation',
                     'ocr',
                     'ocr_with_region',
-                    'docvqa'
+                    'docvqa',
+                    'mixed_caption',
+                    'generate_tags'
                     ],
+                    {
+                    "default": 'more_detailed_caption'
+                    }
                    ),
                 "fill_mask": ("BOOLEAN", {"default": True}),
-            },
-            "optional": {
                 "keep_model_loaded": ("BOOLEAN", {"default": False}),
                 "max_new_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
                 "do_sample": ("BOOLEAN", {"default": True}),
                 "output_mask_select": ("STRING", {"default": ""}),
+                "seed":("INT"),
             }
+    
         }
     
     RETURN_TYPES = ("IMAGE", "MASK", "STRING", "JSON")
@@ -161,8 +167,8 @@ class CXH_Florence2Run:
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
-    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
-            num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select=""):
+    def encode(self, image, text_input, florence2_model, task, fill_mask,keep_model_loaded, 
+            num_beams, max_new_tokens, do_sample, output_mask_select,seed):
         device = mm.get_torch_device()
         _, height, width, _ = image.shape
         offload_device = mm.unet_offload_device()
@@ -191,8 +197,8 @@ class CXH_Florence2Run:
         }
         task_prompt = prompts.get(task, '<OD>')
 
-        if (task not in ['referring_expression_segmentation', 'caption_to_phrase_grounding', 'docvqa']) and text_input:
-            raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation', 'caption_to_phrase_grounding', and 'docvqa'")
+        # if (task not in ['referring_expression_segmentation', 'caption_to_phrase_grounding', 'docvqa']) and text_input:
+        #     raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation', 'caption_to_phrase_grounding', and 'docvqa'")
 
         if text_input != "":
             prompt = task_prompt + " " + text_input
