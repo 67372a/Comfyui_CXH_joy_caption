@@ -12,6 +12,24 @@ import folder_paths
 from .lib.ximg import *
 from .lib.xmodel import *
 
+from model_management import get_torch_device
+DEVICE = get_torch_device()
+# def get_torch_device():  
+#     """  
+#     返回PyTorch模型应该运行的设备（CPU或GPU）  
+#     如果系统支持CUDA并且至少有一个GPU可用，则返回GPU设备；否则返回CPU设备。  
+#     """  
+#     if torch.cuda.is_available():  
+#         # 选择第一个可用的GPU  
+#         device = torch.device("cuda:0")  
+#         print(f"There are {torch.cuda.device_count()} GPU(s) available.")  
+#         print(f"We will use the GPU: {device}")  
+#     else:  
+#         # 如果没有GPU可用，则使用CPU  
+#         device = torch.device("cpu")  
+#         print("No GPU available, using the CPU instead.")  
+#     return device
+
 class JoyPipeline:
     def __init__(self):
         self.clip_model = None
@@ -171,19 +189,19 @@ class Joy_caption:
 
         # Preprocess image
         pImge = clip_processor(images=input_image, return_tensors='pt').pixel_values
-        pImge = pImge.to('cuda:0')
+        pImge = pImge.to(DEVICE)
 
         # Tokenize the prompt
         prompt = tokenizer.encode(prompt, return_tensors='pt', padding=False, truncation=False, add_special_tokens=False)
         # Embed image
-        with torch.amp.autocast_mode.autocast('cuda', enabled=True):
+        with torch.amp.autocast_mode.autocast(str(DEVICE), enabled=True):
             vision_outputs = clip_model(pixel_values=pImge, output_hidden_states=True)
             image_features = vision_outputs.hidden_states[-2]
             embedded_images = image_adapter(image_features)
-            embedded_images = embedded_images.to('cuda:0')
+            embedded_images = embedded_images.to(DEVICE)
 
         # Embed prompt
-        prompt_embeds = text_model.model.embed_tokens(prompt.to('cuda:0'))
+        prompt_embeds = text_model.model.embed_tokens(prompt.to('cuda'))
         assert prompt_embeds.shape == (1, prompt.shape[1], text_model.config.hidden_size), f"Prompt shape is {prompt_embeds.shape}, expected {(1, prompt.shape[1], text_model.config.hidden_size)}"
         embedded_bos = text_model.model.embed_tokens(torch.tensor([[tokenizer.bos_token_id]], device=text_model.device, dtype=torch.int64))   
 
@@ -198,7 +216,7 @@ class Joy_caption:
             torch.tensor([[tokenizer.bos_token_id]], dtype=torch.long),
             torch.zeros((1, embedded_images.shape[1]), dtype=torch.long),
             prompt,
-        ], dim=1).to('cuda:0')
+        ], dim=1).to(DEVICE)
         attention_mask = torch.ones_like(input_ids)
         
         do_sample=True
