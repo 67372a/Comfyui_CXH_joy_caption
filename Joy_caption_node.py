@@ -99,7 +99,7 @@ class Joy_caption_load:
         clip_model = clip_model.vision_model
         clip_model.eval()
         clip_model.requires_grad_(False)
-        clip_model.to('cuda:0')
+        clip_model.to(DEVICE)
 
        
         # LLM
@@ -117,7 +117,7 @@ class Joy_caption_load:
         image_adapter.load_state_dict(torch.load(adapter_path, map_location="cpu"))
         adjusted_adapter =  image_adapter #AdjustedImageAdapter(image_adapter, text_model.config.hidden_size)
         adjusted_adapter.eval()
-        adjusted_adapter.to('cuda:0')
+        adjusted_adapter.to(DEVICE)
 
         self.pipeline.clip_model = clip_model
         self.pipeline.clip_processor = clip_processor
@@ -201,7 +201,7 @@ class Joy_caption:
             embedded_images = embedded_images.to(DEVICE)
 
         # Embed prompt
-        prompt_embeds = text_model.model.embed_tokens(prompt.to('cuda'))
+        prompt_embeds = text_model.model.embed_tokens(prompt.to(DEVICE))
         assert prompt_embeds.shape == (1, prompt.shape[1], text_model.config.hidden_size), f"Prompt shape is {prompt_embeds.shape}, expected {(1, prompt.shape[1], text_model.config.hidden_size)}"
         embedded_bos = text_model.model.embed_tokens(torch.tensor([[tokenizer.bos_token_id]], device=text_model.device, dtype=torch.int64))   
 
