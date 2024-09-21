@@ -9,6 +9,7 @@ from PIL import Image
 import os
 import folder_paths
 import torchvision.transforms.functional as TVF
+from peft import PeftModel, PeftConfig
 
 from .lib.ximg import *
 from .lib.xmodel import *
@@ -251,13 +252,16 @@ class Joy_caption_load_alpha_one:
         assert isinstance(tokenizer, PreTrainedTokenizer) or isinstance(tokenizer, PreTrainedTokenizerFast), f"Tokenizer is of type {type(tokenizer)}"
 
         # LLM
+        text_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, device_map="auto", trust_remote_code=True)
+        
         if os.path.exists(os.path.join(joycaption_path,"text_model")):
-            print("Loading VLM's custom text model")
-            text_model = AutoModelForCausalLM.from_pretrained(os.path.join(joycaption_path,"text_model"), device_map="auto", trust_remote_code=True)
-        else:
-            text_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, device_map="auto", trust_remote_code=True)
+            print("Loading VLM's custom text model lora")
+            loraConfig = PeftConfig.from_pretrained(os.path.join(joycaption_path,"text_model"))
+            loraConfig.base_model_name_or_path=self.model
+            text_model.add_adapter(loraConfig, os.path.join(joycaption_path,"text_model"))
             
         text_model.eval()
+        
 
         # Image Adapter
         adapter_path =  os.path.join(folder_paths.models_dir,"Joy_caption_alpha_one","image_adapter.pt")
