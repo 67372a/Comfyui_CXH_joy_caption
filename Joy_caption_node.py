@@ -269,17 +269,21 @@ class Joy_caption_load_alpha_one:
         # Image Adapter
         adapter_path =  os.path.join(folder_paths.models_dir,"Joy_caption_alpha_one","image_adapter.pt")
 
-        image_adapter = ImageAdapterAlphaOne(clip_model.config.hidden_size, text_model.config.hidden_size, False, False, 38, False) # ImageAdapter(clip_model.config.hidden_size, 4096) 
+        image_adapter = ImageAdapterAlphaOne(clip_model.config.hidden_size, 
+                                             text_model.config.hidden_size, 
+                                             ln1=False, 
+                                             pos_emb=False, 
+                                             num_image_tokens=38, 
+                                             deep_extract=False)
         image_adapter.load_state_dict(torch.load(adapter_path, map_location="cpu"))
-        adjusted_adapter =  image_adapter #AdjustedImageAdapter(image_adapter, text_model.config.hidden_size)
-        adjusted_adapter.eval()
-        adjusted_adapter.to(DEVICE)
+        image_adapter.eval()
+        image_adapter.to(DEVICE)
 
         self.pipeline.clip_model = clip_model
         self.pipeline.clip_processor = clip_processor
         self.pipeline.tokenizer = tokenizer
         self.pipeline.text_model = text_model
-        self.pipeline.image_adapter = adjusted_adapter
+        self.pipeline.image_adapter = image_adapter
     
     def clearCache(self):
          if self.pipeline != None:
