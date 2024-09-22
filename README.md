@@ -42,8 +42,12 @@
 
 
     3.必须手动下载(Must be downloaded manually):https://huggingface.co/spaces/fancyfeast/joy-caption-pre-alpha/tree/main/wpkklhc6   (put in)Joy_caption 
-      
+
 ![1724901527482](https://github.com/user-attachments/assets/e8ec1be6-a96c-4e73-9422-7bcdafb8f1d4)
+
+    4.必须手动下载(Must be downloaded manually):https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-one/tree/main/9em124t2-499968   (put in)Joy_caption_alpha_one 
+
+![image](https://github.com/user-attachments/assets/0c178f5a-6960-42d9-a7c5-6a6e5febcf26)
 
  2).MiniCPMv2_6-prompt-generator + CogFlorence
  
