@@ -1,5 +1,25 @@
 .2024-9-21 Joycaption Alpha One - [Release thread](https://www.reddit.com/r/StableDiffusion/comments/1fm9pxa/joycaption_free_open_uncensored_vlm_alpha_one/)
 
+Below is how the space maps the different options to prompts, use these prompts in the node.
+```
+CAPTION_TYPE_MAP = {
+	("descriptive", "formal", False, False): ["Write a descriptive caption for this image in a formal tone."],
+	("descriptive", "formal", False, True): ["Write a descriptive caption for this image in a formal tone within {word_count} words."],
+	("descriptive", "formal", True, False): ["Write a {length} descriptive caption for this image in a formal tone."],
+	("descriptive", "informal", False, False): ["Write a descriptive caption for this image in a casual tone."],
+	("descriptive", "informal", False, True): ["Write a descriptive caption for this image in a casual tone within {word_count} words."],
+	("descriptive", "informal", True, False): ["Write a {length} descriptive caption for this image in a casual tone."],
+
+	("training_prompt", "formal", False, False): ["Write a stable diffusion prompt for this image."],
+	("training_prompt", "formal", False, True): ["Write a stable diffusion prompt for this image within {word_count} words."],
+	("training_prompt", "formal", True, False): ["Write a {length} stable diffusion prompt for this image."],
+
+	("rng-tags", "formal", False, False): ["Write a list of Booru tags for this image."],
+	("rng-tags", "formal", False, True): ["Write a list of Booru tags for this image within {word_count} words."],
+	("rng-tags", "formal", True, False): ["Write a {length} list of Booru tags for this image."],
+}
+```
+
 .2024-9-9 florence2 Add Florence-2-large-PromptGen-v1.5 and MiniCPM3-4B(CXH_MinCP3_4B_Load CXH_MinCP3_4B_Chat) 
     MiniCPM3-4B聊天 翻译，改写都很强
 
