@@ -210,7 +210,7 @@ class Joy_caption_load_alpha_one:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": (["unsloth/Meta-Llama-3.1-8B-bnb-4bit", "unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit","meta/Meta-Llama-3.1-8B","meta/Meta-Llama-3.1-8B-Instruct", "mlabonne/Meta-Llama-3.1-8B-Instruct-abliterated"],), 
+                "model": (["unsloth/Meta-Llama-3.1-8B-bnb-4bit", "meta/Meta-Llama-3.1-8B"],), 
                
             }
         }
