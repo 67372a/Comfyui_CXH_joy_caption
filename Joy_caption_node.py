@@ -9,12 +9,15 @@ from PIL import Image
 import os
 import folder_paths
 import torchvision.transforms.functional as TVF
-from peft import PeftModel, PeftConfig
+from peft import PeftConfig
+import datetime
+import hashlib
 
 from .lib.ximg import *
 from .lib.xmodel import *
 
 from model_management import get_torch_device
+
 DEVICE = get_torch_device()
 # def get_torch_device():  
 #     """  
