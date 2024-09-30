@@ -354,7 +354,7 @@ class Joy_caption:
         # Tokenize the prompt
         prompt = tokenizer.encode(prompt, return_tensors='pt', padding=False, truncation=False, add_special_tokens=False)
         # Embed image
-        with torch.amp.autocast_mode.autocast(str(DEVICE), enabled=True):
+        with torch.amp.autocast_mode.autocast(device_type=DEVICE.type, enabled=True):
             vision_outputs = clip_model(pixel_values=pImge, output_hidden_states=True)
             image_features = vision_outputs.hidden_states[-2]
             embedded_images = image_adapter(image_features)
@@ -464,7 +464,7 @@ class Joy_caption_alpha_one:
         prompt = tokenizer.encode(prompt, return_tensors='pt', padding=False, truncation=False, add_special_tokens=False)
         
         # Embed image
-        with torch.amp.autocast_mode.autocast(str(DEVICE), enabled=True):
+        with torch.amp.autocast_mode.autocast(device_type=DEVICE.type, enabled=True):
             vision_outputs = clip_model(pixel_values=pixel_values, output_hidden_states=True)
             image_features = vision_outputs.hidden_states
             embedded_images = image_adapter(image_features)
