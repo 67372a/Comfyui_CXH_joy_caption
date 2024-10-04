@@ -1,3 +1,57 @@
+.2024-9-21 Joycaption Alpha Two - [Release article](https://civitai.com/articles/7697/joycaption-alpha-two-release)
+
+Use instruct with alpha two, use non-instruct with alpha one.
+
+```
+CAPTION_TYPE_MAP = {
+        "Descriptive": [
+            "Write a descriptive caption for this image in a formal tone.",
+            "Write a descriptive caption for this image in a formal tone within {word_count} words.",
+            "Write a {length} descriptive caption for this image in a formal tone.",
+        ],
+        "Descriptive (Informal)": [
+            "Write a descriptive caption for this image in a casual tone.",
+            "Write a descriptive caption for this image in a casual tone within {word_count} words.",
+            "Write a {length} descriptive caption for this image in a casual tone.",
+        ],
+        "Training Prompt": [
+            "Write a stable diffusion prompt for this image.",
+            "Write a stable diffusion prompt for this image within {word_count} words.",
+            "Write a {length} stable diffusion prompt for this image.",
+        ],
+        "MidJourney": [
+            "Write a MidJourney prompt for this image.",
+            "Write a MidJourney prompt for this image within {word_count} words.",
+            "Write a {length} MidJourney prompt for this image.",
+        ],
+        "Booru tag list": [
+            "Write a list of Booru tags for this image.",
+            "Write a list of Booru tags for this image within {word_count} words.",
+            "Write a {length} list of Booru tags for this image.",
+        ],
+        "Booru-like tag list": [
+            "Write a list of Booru-like tags for this image.",
+            "Write a list of Booru-like tags for this image within {word_count} words.",
+            "Write a {length} list of Booru-like tags for this image.",
+        ],
+        "Art Critic": [
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc.",
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Keep it within {word_count} words.",
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Keep it {length}.",
+        ],
+        "Product Listing": [
+            "Write a caption for this image as though it were a product listing.",
+            "Write a caption for this image as though it were a product listing. Keep it under {word_count} words.",
+            "Write a {length} caption for this image as though it were a product listing.",
+        ],
+        "Social Media Post": [
+            "Write a caption for this image as if it were being used for a social media post.",
+            "Write a caption for this image as if it were being used for a social media post. Limit the caption to {word_count} words.",
+            "Write a {length} caption for this image as if it were being used for a social media post.",
+        ],
+    }
+```
+
 .2024-9-21 Joycaption Alpha One - [Release thread](https://www.reddit.com/r/StableDiffusion/comments/1fm9pxa/joycaption_free_open_uncensored_vlm_alpha_one/)
 
 Below is how the space maps the different options to prompts, use these prompts in the node.
@@ -67,7 +121,12 @@ CAPTION_TYPE_MAP = {
 
     4.必须手动下载(Must be downloaded manually):https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-one/tree/main/9em124t2-499968   (put in)Joy_caption_alpha_one 
 
-![image](https://github.com/user-attachments/assets/0c178f5a-6960-42d9-a7c5-6a6e5febcf26)
+![1724901527482](https://github.com/user-attachments/assets/e8ec1be6-a96c-4e73-9422-7bcdafb8f1d4)
+
+    5.必须手动下载(Must be downloaded manually):https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-two/tree/main/cgrkzexw-599808   (put in)Joy_caption_alpha_two
+
+![image](https://github.com/user-attachments/assets/8a7937dd-d58e-46ef-90bd-5213ab970a3c)
+
 
  2).MiniCPMv2_6-prompt-generator + CogFlorence
  
