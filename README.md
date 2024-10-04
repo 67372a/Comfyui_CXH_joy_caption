@@ -121,7 +121,7 @@ CAPTION_TYPE_MAP = {
 
     4.必须手动下载(Must be downloaded manually):https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-one/tree/main/9em124t2-499968   (put in)Joy_caption_alpha_one 
 
-![1724901527482](https://github.com/user-attachments/assets/e8ec1be6-a96c-4e73-9422-7bcdafb8f1d4)
+![image](https://github.com/user-attachments/assets/29848e4b-a573-4ba4-aa99-890f8073d6be)
 
     5.必须手动下载(Must be downloaded manually):https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-two/tree/main/cgrkzexw-599808   (put in)Joy_caption_alpha_two
 
