@@ -9,7 +9,7 @@ from PIL import Image
 import os
 import folder_paths
 import torchvision.transforms.functional as TVF
-from peft import PeftConfig
+from peft import PeftModel
 import datetime
 import hashlib
 
@@ -205,6 +205,7 @@ class Joy_caption_load_alpha_one:
 
     def __init__(self):
         self.model = None
+        self.joycaption_version = None
         self.pipeline = JoyPipeline()
         self.pipeline.parent = self
         pass
@@ -213,8 +214,8 @@ class Joy_caption_load_alpha_one:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": (["unsloth/Meta-Llama-3.1-8B-bnb-4bit", "meta/Meta-Llama-3.1-8B"],), 
-               
+                "model": (["unsloth/Meta-Llama-3.1-8B-bnb-4bit", "unsloth/Meta-Llama-3.1-8B","unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit","unsloth/Meta-Llama-3.1-8B-Instruct"], {"default": "unsloth/Meta-Llama-3.1-8B-bnb-4bit"}), 
+                "joycaption_version": (["Joy_caption_alpha_one", "Joy_caption_alpha_two"], {"default": "Joy_caption_alpha_one"}),                
             }
         }
 
@@ -236,12 +237,14 @@ class Joy_caption_load_alpha_one:
                 CLIP_PATH,
                 trust_remote_code=True
             )
-            
-        joycaption_path = os.path.join(folder_paths.models_dir,"Joy_caption_alpha_one")
         clip_model = clip_model.vision_model
-        if os.path.exists(os.path.join(joycaption_path,"clip_model.pt")):
+            
+        JOYCAPTION_PATH = os.path.join(folder_paths.models_dir, self.joycaption_version)
+        print(JOYCAPTION_PATH)
+
+        if os.path.exists(os.path.join(JOYCAPTION_PATH,"clip_model.pt")):
             print("Loading VLM's custom vision model")
-            checkpoint = torch.load(os.path.join(joycaption_path,"clip_model.pt"), map_location='cpu')
+            checkpoint = torch.load(os.path.join(JOYCAPTION_PATH,"clip_model.pt"), map_location='cpu')
             checkpoint = {k.replace("_orig_mod.module.", ""): v for k, v in checkpoint.items()}
             clip_model.load_state_dict(checkpoint)
             del checkpoint
@@ -251,23 +254,25 @@ class Joy_caption_load_alpha_one:
         clip_model.to(DEVICE)
         
         MODEL_PATH = download_hg_model(self.model,"LLM")
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH,use_fast=False)
+        if self.joycaption_version == "Joy_caption_alpha_two":
+            print("Loading VLM's custom tokenizer")
+            tokenizer = AutoTokenizer.from_pretrained(os.path.join(JOYCAPTION_PATH, "text_model"), use_fast=True)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, use_fast=False)
         assert isinstance(tokenizer, PreTrainedTokenizer) or isinstance(tokenizer, PreTrainedTokenizerFast), f"Tokenizer is of type {type(tokenizer)}"
 
         # LLM
         text_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, device_map="auto", trust_remote_code=True)
         
-        if os.path.exists(os.path.join(joycaption_path,"text_model")):
+        if os.path.exists(os.path.join(JOYCAPTION_PATH, "text_model")):
             print("Loading VLM's custom text model lora")
-            loraConfig = PeftConfig.from_pretrained(os.path.join(joycaption_path,"text_model"))
-            loraConfig.base_model_name_or_path=self.model
-            text_model.add_adapter(loraConfig, os.path.join(joycaption_path,"text_model"))
+            PeftModel.from_pretrained(text_model, os.path.join(JOYCAPTION_PATH,"text_model"))
             
         text_model.eval()
         
 
         # Image Adapter
-        adapter_path =  os.path.join(folder_paths.models_dir,"Joy_caption_alpha_one","image_adapter.pt")
+        adapter_path =  os.path.join(JOYCAPTION_PATH,"image_adapter.pt")
 
         image_adapter = ImageAdapterAlphaOne(clip_model.config.hidden_size, 
                                              text_model.config.hidden_size, 
@@ -289,9 +294,10 @@ class Joy_caption_load_alpha_one:
          if self.pipeline != None:
               self.pipeline.clearCache()
 
-    def gen(self,model):
+    def gen(self, model, joycaption_version):
         if self.model == None or self.model != model or self.pipeline == None:
             self.model = model
+            self.joycaption_version = joycaption_version
             self.loadCheckPoint()
         return (self.pipeline,)
 
@@ -405,6 +411,22 @@ class Joy_caption:
 
 class Joy_caption_alpha_one:
     original_IS_CHANGED = None
+    CAPTION_TYPE_MAP = {
+        ("descriptive", "formal", False, False): ["Write a descriptive caption for this image in a formal tone."],
+        ("descriptive", "formal", False, True): ["Write a descriptive caption for this image in a formal tone within {word_count} words."],
+        ("descriptive", "formal", True, False): ["Write a {length} descriptive caption for this image in a formal tone."],
+        ("descriptive", "informal", False, False): ["Write a descriptive caption for this image in a casual tone."],
+        ("descriptive", "informal", False, True): ["Write a descriptive caption for this image in a casual tone within {word_count} words."],
+        ("descriptive", "informal", True, False): ["Write a {length} descriptive caption for this image in a casual tone."],
+
+        ("training_prompt", "formal", False, False): ["Write a stable diffusion prompt for this image."],
+        ("training_prompt", "formal", False, True): ["Write a stable diffusion prompt for this image within {word_count} words."],
+        ("training_prompt", "formal", True, False): ["Write a {length} stable diffusion prompt for this image."],
+
+        ("rng-tags", "formal", False, False): ["Write a list of Booru tags for this image."],
+        ("rng-tags", "formal", False, True): ["Write a list of Booru tags for this image within {word_count} words."],
+        ("rng-tags", "formal", True, False): ["Write a {length} list of Booru tags for this image."],
+    }
 
     def __init__(self):
         self.reroll_result = "enable"
@@ -416,8 +438,8 @@ class Joy_caption_alpha_one:
             "required": {
                 "joy_pipeline": ("JoyPipeline",),
                 "image": ("IMAGE",),
-                "prompt":   ("STRING", {"multiline": True, "default": "A descriptive caption for this image:\n"},),
-                "max_new_tokens":("INT", {"default": 1024, "min": 10, "max": 4096, "step": 1}),
+                "prompt":   ("STRING", {"multiline": True, "default": "Write a very long descriptive caption for this image in a formal tone."},),
+                "max_new_tokens":("INT", {"default": 512, "min": 10, "max": 1024, "step": 1}),
                 "temperature": ("FLOAT", {"default": 0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "top_k": ("INT", {"default": 0, "min": 0, "max": 200, "step": 1}),
                 "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
@@ -442,10 +464,9 @@ class Joy_caption_alpha_one:
             if hasattr(Joy_caption, "IS_CHANGED"):
                 delattr(Joy_caption, "IS_CHANGED")
     
-        if joy_pipeline.clip_processor == None:
+        if joy_pipeline.tokenizer == None:
             joy_pipeline.parent.loadCheckPoint()    
 
-        clip_processor = joy_pipeline.clip_processor
         tokenizer = joy_pipeline.tokenizer
         clip_model = joy_pipeline.clip_model
         image_adapter = joy_pipeline.image_adapter
@@ -454,10 +475,10 @@ class Joy_caption_alpha_one:
         input_image = tensor2pil(image)
 
         # Preprocess image
+        #image = clip_processor(images=input_image, return_tensors='pt').pixel_values
         image = input_image.resize((384, 384), Image.LANCZOS)
         pixel_values = TVF.pil_to_tensor(image).unsqueeze(0) / 255.0
         pixel_values = TVF.normalize(pixel_values, [0.5], [0.5])
-        pixel_values = clip_processor(images=image, return_tensors='pt').pixel_values
         pixel_values = pixel_values.to(DEVICE)
 
         # Tokenize the prompt
@@ -466,8 +487,8 @@ class Joy_caption_alpha_one:
         # Embed image
         with torch.amp.autocast_mode.autocast(device_type=DEVICE.type, enabled=True):
             vision_outputs = clip_model(pixel_values=pixel_values, output_hidden_states=True)
-            image_features = vision_outputs.hidden_states
-            embedded_images = image_adapter(image_features)
+
+            embedded_images = image_adapter(vision_outputs.hidden_states)
             embedded_images = embedded_images.to(DEVICE)
 
         # Embed prompt
@@ -500,10 +521,199 @@ class Joy_caption_alpha_one:
 
         # Trim off the prompt
         generate_ids = generate_ids[:, input_ids.shape[1]:]
-        if generate_ids[0][-1] == tokenizer.eos_token_id:
+        if generate_ids[0][-1] == tokenizer.eos_token_id or generate_ids[0][-1] == tokenizer.convert_tokens_to_ids("<|eot_id|>") or generate_ids[0][-1] == tokenizer.convert_tokens_to_ids("<|end_of_text|>"):
             generate_ids = generate_ids[:, :-1]
 
         caption = tokenizer.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
+        r = caption.strip()
+
+        if cache_models == False:
+           joy_pipeline.parent.clearCache()
+
+        return (r,)
+        
+    @classmethod
+    def IS_CHANGED(s):
+        hash_value = hashlib.md5(str(datetime.datetime.now()).encode()).hexdigest()
+        return hash_value
+
+class Joy_caption_alpha_two:
+    original_IS_CHANGED = None
+    CAPTION_TYPE_MAP = {
+        "Descriptive": [
+            "Write a descriptive caption for this image in a formal tone.",
+            "Write a descriptive caption for this image in a formal tone within {word_count} words.",
+            "Write a {length} descriptive caption for this image in a formal tone.",
+        ],
+        "Descriptive (Informal)": [
+            "Write a descriptive caption for this image in a casual tone.",
+            "Write a descriptive caption for this image in a casual tone within {word_count} words.",
+            "Write a {length} descriptive caption for this image in a casual tone.",
+        ],
+        "Training Prompt": [
+            "Write a stable diffusion prompt for this image.",
+            "Write a stable diffusion prompt for this image within {word_count} words.",
+            "Write a {length} stable diffusion prompt for this image.",
+        ],
+        "MidJourney": [
+            "Write a MidJourney prompt for this image.",
+            "Write a MidJourney prompt for this image within {word_count} words.",
+            "Write a {length} MidJourney prompt for this image.",
+        ],
+        "Booru tag list": [
+            "Write a list of Booru tags for this image.",
+            "Write a list of Booru tags for this image within {word_count} words.",
+            "Write a {length} list of Booru tags for this image.",
+        ],
+        "Booru-like tag list": [
+            "Write a list of Booru-like tags for this image.",
+            "Write a list of Booru-like tags for this image within {word_count} words.",
+            "Write a {length} list of Booru-like tags for this image.",
+        ],
+        "Art Critic": [
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc.",
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Keep it within {word_count} words.",
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Keep it {length}.",
+        ],
+        "Product Listing": [
+            "Write a caption for this image as though it were a product listing.",
+            "Write a caption for this image as though it were a product listing. Keep it under {word_count} words.",
+            "Write a {length} caption for this image as though it were a product listing.",
+        ],
+        "Social Media Post": [
+            "Write a caption for this image as if it were being used for a social media post.",
+            "Write a caption for this image as if it were being used for a social media post. Limit the caption to {word_count} words.",
+            "Write a {length} caption for this image as if it were being used for a social media post.",
+        ],
+    }
+
+    def __init__(self):
+        self.reroll_result = "enable"
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "joy_pipeline": ("JoyPipeline",),
+                "image": ("IMAGE",),
+                "prompt":   ("STRING", {"multiline": True, "default": "Write a very long descriptive caption for this image in a formal tone."},),
+                "max_new_tokens":("INT", {"default": 512, "min": 10, "max": 1024, "step": 1}),
+                "temperature": ("FLOAT", {"default": 0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "top_k": ("INT", {"default": 0, "min": 0, "max": 200, "step": 1}),
+                "top_p": ("FLOAT", {"default": 1.0, "min": 0, "max": 1.0, "step": 0.01}),
+                "beams": ("INT", {"default": 4, "min": 1, "max": 64, "step": 1}),
+                "length_penalty": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.1}),
+                "reroll_result": (["enable", "disable"], {"default": "enable"}),
+                "cache_models": ("BOOLEAN", {"default": True}),
+            }
+        }
+
+    CATEGORY = "CXH/LLM"
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "gen"
+    def gen(self,joy_pipeline,image,prompt,max_new_tokens,temperature,top_k,top_p,beams,length_penalty,reroll_result,cache_models): 
+        
+    
+        self.reroll_result = reroll_result
+        if Joy_caption.original_IS_CHANGED is None:
+            Joy_caption.original_IS_CHANGED = Joy_caption.IS_CHANGED
+        if self.reroll_result == "enable":
+            setattr(Joy_caption, "IS_CHANGED", Joy_caption.original_IS_CHANGED)
+        else:
+            if hasattr(Joy_caption, "IS_CHANGED"):
+                delattr(Joy_caption, "IS_CHANGED")
+    
+        if joy_pipeline.tokenizer == None:
+            joy_pipeline.parent.loadCheckPoint()    
+
+        tokenizer = joy_pipeline.tokenizer
+        clip_model = joy_pipeline.clip_model
+        image_adapter = joy_pipeline.image_adapter
+        text_model = joy_pipeline.text_model
+
+        input_image = tensor2pil(image)
+
+        # Preprocess image
+        # pixel_values = clip_processor(images=image, return_tensors='pt').pixel_values
+	    # NOTE: I found the default processor for so400M to have worse results than just using PIL directly
+        image = input_image.resize((384, 384), Image.LANCZOS)
+        pixel_values = TVF.pil_to_tensor(image).unsqueeze(0) / 255.0
+        pixel_values = TVF.normalize(pixel_values, [0.5], [0.5])
+        pixel_values = pixel_values.to(DEVICE)
+        
+        # Embed image
+	    # This results in Batch x Image Tokens x Features
+        with torch.amp.autocast_mode.autocast(device_type=DEVICE.type, enabled=True):
+            vision_outputs = clip_model(pixel_values=pixel_values, output_hidden_states=True)
+            embedded_images = image_adapter(vision_outputs.hidden_states)
+            embedded_images = embedded_images.to(DEVICE)
+
+        prompt = prompt.strip()
+
+        # Build the conversation
+        convo = [
+            {
+                "role": "system",
+                "content": "You are a helpful image captioner.",
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ]
+
+        # Format the conversation
+        convo_string = tokenizer.apply_chat_template(convo, tokenize = False, add_generation_prompt = True)
+        assert isinstance(convo_string, str)
+
+        # Tokenize the conversation
+        # prompt_str is tokenized separately so we can do the calculations below
+        convo_tokens = tokenizer.encode(convo_string, return_tensors="pt", add_special_tokens=False, truncation=False)
+        prompt_tokens = tokenizer.encode(prompt, return_tensors="pt", add_special_tokens=False, truncation=False)
+        assert isinstance(convo_tokens, torch.Tensor) and isinstance(prompt_tokens, torch.Tensor)
+        convo_tokens = convo_tokens.squeeze(0)   # Squeeze just to make the following easier
+        prompt_tokens = prompt_tokens.squeeze(0)
+
+        # Calculate where to inject the image
+        eot_id_indices = (convo_tokens == tokenizer.convert_tokens_to_ids("<|eot_id|>")).nonzero(as_tuple=True)[0].tolist()
+        assert len(eot_id_indices) == 2, f"Expected 2 <|eot_id|> tokens, got {len(eot_id_indices)}"
+
+        preamble_len = eot_id_indices[1] - prompt_tokens.shape[0]   # Number of tokens before the prompt
+
+        # Embed the tokens
+        convo_embeds = text_model.model.embed_tokens(convo_tokens.unsqueeze(0).to(DEVICE))
+
+        # Construct the input
+        input_embeds = torch.cat([
+            convo_embeds[:, :preamble_len],   # Part before the prompt
+            embedded_images.to(dtype=convo_embeds.dtype),   # Image
+            convo_embeds[:, preamble_len:],   # The prompt and anything after it
+        ], dim=1).to(DEVICE)
+
+        input_ids = torch.cat([
+            convo_tokens[:preamble_len].unsqueeze(0),
+            torch.zeros((1, embedded_images.shape[1]), dtype=torch.long),   # Dummy tokens for the image (TODO: Should probably use a special token here so as not to confuse any generation algorithms that might be inspecting the input)
+            convo_tokens[preamble_len:].unsqueeze(0),
+        ], dim=1).to(DEVICE)
+        attention_mask = torch.ones_like(input_ids)
+
+        # Debugging
+        print(f"Input to model: {repr(tokenizer.decode(input_ids[0]))}")
+
+        do_sample=True
+        if temperature == 0:
+            do_sample=False
+        
+        generate_ids = text_model.generate(input_ids, inputs_embeds=input_embeds, attention_mask=attention_mask, max_new_tokens=max_new_tokens, do_sample=do_sample, top_k=top_k, top_p=top_p, temperature=temperature, suppress_tokens=None, num_beams=beams, length_penalty=length_penalty)
+
+        # Trim off the prompt
+        generate_ids = generate_ids[:, input_ids.shape[1]:]
+        if generate_ids[0][-1] == tokenizer.eos_token_id or generate_ids[0][-1] == tokenizer.convert_tokens_to_ids("<|eot_id|>") or generate_ids[0][-1] == tokenizer.convert_tokens_to_ids("<|end_of_text|>"):
+            generate_ids = generate_ids[:, :-1]
+
+        caption = tokenizer.batch_decode(generate_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False)[0]
+
         r = caption.strip()
 
         if cache_models == False:

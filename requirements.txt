@@ -1,5 +1,5 @@
 protobuf
-huggingface_hub==0.24.3
+huggingface_hub>=0.24.3
 transformers>=4.44.2
 tqdm
 numpy
@@ -10,4 +10,4 @@ Pillow==10.1.0
 sentencepiece==0.1.99
 accelerate>=0.30.1
 bitsandbytes>=0.43.1
-peft>=0.9.0
+peft>=0.12.0
