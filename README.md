@@ -1,6 +1,6 @@
 .2024-9-21 Joycaption Alpha Two - [Release article](https://civitai.com/articles/7697/joycaption-alpha-two-release)
 
-Use instruct with alpha two, use non-instruct with alpha one.
+Use instruct with alpha two, use non-instruct with alpha one. Other supported prompt modifers can be found at https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-two.
 
 ```
 CAPTION_TYPE_MAP = {
